@@ -1,0 +1,184 @@
+════════════════════════════════════════════════════════════════════
+  NABRA SPACE — Full Project Plan & Architecture Summary
+════════════════════════════════════════════════════════════════════
+
+PROJECT
+  Platform : Algerian Dialect Voice Generation SaaS (Arabic RTL)
+  Stack    : React + Vite + TailwindCSS + shadcn/ui (frontend)
+             Hono + @hono/node-server (backend — CF Workers compatible)
+             Supabase (Postgres + Auth + Storage)
+             Dodo Payments (payments)
+             Gemini 2.5 Flash TTS (audio generation)
+
+════════════════════════════════════════════════════════════════════
+  MONOREPO STRUCTURE
+════════════════════════════════════════════════════════════════════
+
+  artifacts/nabra-space/    — React frontend (SPA, RTL, Arabic)
+  artifacts/api-server/     — Hono REST API (Node.js, ESM)
+  lib/api-spec/             — OpenAPI 3.0 spec (source of truth)
+  lib/api-client-react/     — Generated React Query hooks + Zod schemas
+  supabase/schema.sql       — Full Postgres schema to run in Supabase
+
+════════════════════════════════════════════════════════════════════
+  DATABASE (Supabase Postgres)
+════════════════════════════════════════════════════════════════════
+
+  Tables:
+    users_profile          — user display info + credits_balance + is_admin/is_banned
+    generation_history     — TTS jobs: blocks_json, audio_url, status, character_count
+    transactions           — payment records: amount_usd, characters_granted, dodo_payment_id
+    affiliates             — referral program: referral_code, commission_rate, balances
+    referral_attributions  — links referred_user → affiliate_user; commission_expires_at (12 mo)
+    promo_codes            — admin-created codes: characters_granted, max_uses, expiry
+    promo_code_redemptions — audit trail per user per code
+    affiliate_payouts      — manual payout records by admin
+
+  RPC Functions (called by backend only):
+    deduct_credits(user_id, amount)
+    add_credits(user_id, amount) → new_balance
+    redeem_promo_code(promo_code_id, user_id, characters) → {new_balance}
+    increment_affiliate_clicks(referral_code)
+    increment_affiliate_signups(user_id)
+    increment_affiliate_conversions(user_id)
+    add_pending_commission(affiliate_user_id, amount)
+
+  Trigger:
+    handle_new_user — fires on INSERT to auth.users
+    Creates users_profile (credits=500, is_admin=true only for youcef20226@gmail.com)
+    Creates affiliates row with unique 8-char referral_code
+    Uses ON CONFLICT DO NOTHING — NEVER overwrites credits_balance or is_admin
+
+  Storage:
+    Bucket: generated-audio (private, authenticated access only)
+    Path: {user_id}/{generation_id}.wav
+
+════════════════════════════════════════════════════════════════════
+  BACKEND API (Hono — /api/*)
+════════════════════════════════════════════════════════════════════
+
+  Auth middleware: requireAuth — validates Supabase JWT from Bearer header
+  Admin middleware: requireAdmin — checks is_admin flag from users_profile
+
+  Endpoints:
+    GET  /api/healthz                    — health check
+    GET  /api/me                         — fetch own profile (SELECT only)
+    PATCH /api/me                        — update full_name only (whitelist)
+
+    POST /api/generate                   — create generation job (background Gemini call)
+    GET  /api/generations                — list own history (last 50)
+    GET  /api/generations/:id            — get single generation (refreshes signed URL)
+    GET  /api/generations/:id/stream     — redirect to signed WAV URL (1-hour TTL)
+
+    POST /api/payments/checkout          — create Dodo payment link
+    POST /api/payments/webhook           — receive Dodo event, add credits (HMAC-SHA256)
+
+    POST /api/affiliate/click            — increment total_clicks (public)
+    POST /api/affiliate/attribute        — attribute referral on signup (idempotent)
+    GET  /api/affiliate/stats            — own stats (creates row if missing, transfers pending→available)
+
+    POST /api/promo-codes/redeem         — atomic redemption (RPC transaction)
+
+    GET  /api/admin/overview             — dashboard stats
+    GET  /api/admin/users                — user list (searchable)
+    PATCH /api/admin/users/:id/credits   — set/add/subtract credits
+    PATCH /api/admin/users/:id/status    — ban/unban user
+    GET  /api/admin/transactions         — all payments (filterable by status)
+    GET  /api/admin/promo-codes          — list codes
+    POST /api/admin/promo-codes          — create code
+    PATCH /api/admin/promo-codes/:id     — update code
+    DELETE /api/admin/promo-codes/:id    — delete code
+    GET  /api/admin/affiliates           — all affiliates
+    PATCH /api/admin/affiliates/:id      — update commission_rate or status
+    POST /api/admin/affiliates/:id/payout — record manual payout + zero available_balance
+
+════════════════════════════════════════════════════════════════════
+  FRONTEND PAGES (React, Wouter router, RTL Arabic)
+════════════════════════════════════════════════════════════════════
+
+  /          → Landing page (public)
+  /login     → Google OAuth sign-in
+  /generate  → Studio: multi-block text with per-block tone selector (8 tones)
+  /history   → Generation history with audio playback
+  /pricing   → Packages (Starter $1/6k, Pro $5/40k, Agency $10/100k) — USD only
+  /gifts     → Affiliate program + promo code redemption
+  /settings  → Edit full_name
+  /admin     → Admin dashboard (overview, users, transactions, promo codes, affiliates)
+
+════════════════════════════════════════════════════════════════════
+  AUDIO GENERATION FLOW
+════════════════════════════════════════════════════════════════════
+
+  1. POST /api/generate → validate credits → create DB row (status=processing) → return 201
+  2. Background: Gemini 2.5 Flash TTS API call (up to 3 retries with backoff)
+     - System prompt: Algerian dialect lock + emotion instructions
+     - All blocks combined: "[Tone]\ntext" joined with newlines
+  3. Convert PCM base64 → WAV (RIFF header, 16-bit, 24kHz mono) using DataView/ArrayBuffer
+  4. Upload WAV to Supabase Storage (generated-audio/{user_id}/{gen_id}.wav)
+  5. Create 7-day signed URL → store in DB
+  6. Deduct credits atomically via deduct_credits() RPC
+  7. Update status to 'completed' (or 'failed')
+  Frontend polls GET /api/generations/:id every 2s until status != processing
+
+════════════════════════════════════════════════════════════════════
+  PAYMENT FLOW
+════════════════════════════════════════════════════════════════════
+
+  1. POST /api/payments/checkout → create pending transaction → create Dodo payment link
+     Requires: DODO_API_KEY, DODO_PRODUCT_ID_{STARTER|PRO|AGENCY}
+  2. User pays on Dodo checkout page
+  3. Dodo sends webhook → POST /api/payments/webhook
+     - Verify HMAC-SHA256 signature (DODO_WEBHOOK_SECRET)
+     - Idempotency check before processing
+     - Update transaction to completed
+     - add_credits() RPC → add characters to user
+     - processAffiliateCommission() → check 12-month window → add_pending_commission()
+
+  Packages (USD only — no DZD anywhere):
+    starter : $1.00 → 6,000 characters
+    pro     : $5.00 → 40,000 characters
+    agency  : $10.00 → 100,000 characters
+
+════════════════════════════════════════════════════════════════════
+  AFFILIATE SYSTEM
+════════════════════════════════════════════════════════════════════
+
+  - Every user gets a unique referral code on signup (trigger)
+  - referral_attributions.commission_expires_at = attributed_at + 12 months
+  - Default commission: 15% of payment amount
+  - After purchase: commission added to pending_balance (10-day hold)
+  - On GET /affiliate/stats: if conversions older than 10 days, move pending→available
+  - Admin can manually record payouts and zero out available_balance
+  - Self-referral: silently rejected
+  - After expiry date: no commission earned (but stats preserved)
+
+════════════════════════════════════════════════════════════════════
+  ENVIRONMENT VARIABLES REQUIRED
+════════════════════════════════════════════════════════════════════
+
+  Backend (Replit Secrets):
+    SUPABASE_URL                  — Supabase project URL
+    SUPABASE_SERVICE_ROLE_KEY     — Service role key (never exposed to frontend)
+    SUPABASE_ANON_KEY             — Anon key (also sent to frontend as VITE_SUPABASE_ANON_KEY)
+    GEMINI_API_KEY                — Google Gemini API key
+    DODO_API_KEY                  — Dodo Payments secret key
+    DODO_WEBHOOK_SECRET           — For HMAC-SHA256 webhook verification
+    DODO_PRODUCT_ID_STARTER       — Dodo product ID for starter package
+    DODO_PRODUCT_ID_PRO           — Dodo product ID for pro package
+    DODO_PRODUCT_ID_AGENCY        — Dodo product ID for agency package
+    FRONTEND_URL                  — Production URL for OAuth redirectTo (optional, avoids localhost)
+
+════════════════════════════════════════════════════════════════════
+  SETUP CHECKLIST
+════════════════════════════════════════════════════════════════════
+
+  [ ] Run supabase/schema.sql in Supabase SQL Editor
+  [ ] Create products in Dodo Payments dashboard
+  [ ] Set DODO_PRODUCT_ID_STARTER / _PRO / _AGENCY in Replit Secrets
+  [ ] Configure Google OAuth provider in Supabase Auth settings
+  [ ] Set FRONTEND_URL to production domain when deploying
+  [ ] Run in Supabase SQL Editor after first login:
+        UPDATE users_profile SET is_admin = true, credits_balance = 500
+        WHERE email = 'youcef20226@gmail.com';
+
+════════════════════════════════════════════════════════════════════

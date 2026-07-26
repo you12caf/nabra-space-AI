@@ -1,0 +1,44 @@
+ابنِ محرك توليد الصوت بهذه الآلية بالضبط — لا تنحرف عنها، هي مُثبَتة ومُختبرة:
+
+### الواجهة (صفحة /generate):
+- الحالة: مصفوفة blocks، كل عنصر { tone: string, text: string }، تبدأ بعنصر واحد { tone: "Calm", text: "" }.
+- لكل بلوك: قائمة اختيار Tone (قيم ثابتة فقط، بدون "تخصيص حر"):
+  Friendly, Relieved, Excited, Curious, Satisfied, Calm, Serious, Energetic
+  (اعرضها بالعربية: ودود، مرتاح، متحمس، فضولي، راضٍ، هادئ، جاد، حيوي)
+- مربع نص لكل بلوك + عداد أحرف + زر حذف (معطّل عند بلوك واحد متبقٍ).
+- زر "+ إضافة بلوك".
+- **عداد رصيد ظاهر دائمًا في أعلى الصفحة** (وفي الحقيقة في كل صفحات لوحة التحكم — ضعه في الـ layout المشترك وليس فقط هنا): "رصيدك: X حرف"، يُحدَّث فوريًا بعد كل عملية.
+- شريط سفلي: مجموع أحرف كل البلوكات + زر توليد. الزر معطّل إذا: أي بلوك فارغ، أو مجموع الأحرف > الرصيد المتاح، أو التوليد جارٍ.
+- إذا الرصيد غير كافٍ: رسالة واضحة "رصيدك غير كافٍ (تحتاج X حرف، لديك Y)" + رابط لصفحة الشحن. لا يُرسَل أي طلب لـ Gemini في هذه الحالة.
+- بعد الضغط توليد: أنشئ job بحالة processing، استطلع حالته كل 2 ثانية حتى completed/failed، اعرض مؤشر تحميل واضح.
+- عند الاكتمال: مشغّل صوت واحد لكل الناتج + رسالة نجاح. عند الفشل: رسالة خطأ واضحة، ولا خصم أي رصيد.
+
+### الباك إند — الآلية الدقيقة (إجبارية):
+
+1. اجمع كل البلوكات في نص واحد بصيغة:
+   [Tone1]
+   نص البلوك الأول
+   [Tone2]
+   نص البلوك الثاني
+   (سطر بالتون بين قوسين مربعين، ثم النص، لكل بلوك بالترتيب)
+
+2. أضف قبل هذا النص system instructions ثابتة بالإنجليزية بالضبط (مدمجة داخل نفس الـ prompt لأن نماذج TTS لا تدعم systemInstruction منفصلة):
+
+You are a professional Algerian voice actor.
+Environment: A professional closed recording studio, absolute silence, high acoustic isolation, no echoes.
+Dialect Lock: You must strictly read and pronounce the text in authentic Algerian Darja (Algerian Dialect) 100%. Under no circumstances are you allowed to use Modern Standard Arabic (Fusha) pronunciation or tone.
+Emotion Guidelines: You will receive text blocks prefixed with emotion tags in square brackets like [Friendly] or [Excited]. You must adapt your voice pitch, speed, and emotional tone instantly based on these tags.
+
+3. استدعاء واحد فقط لـ Gemini TTS:
+   POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=GEMINI_API_KEY
+   body: { contents: [{ role: "user", parts: [{ text: <النص الكامل> }] }], generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } } } } }
+   timeout: 120 ثانية. 3 محاولات إعادة (exponential backoff) عند الفشل المؤقت.
+
+4. ⚠️ إجباري: Gemini يرجّع PCM خام بدون هيدر. اكتب دالة تحوّله لـ WAV صالح (هيدر RIFF/WAVE 44 بايت، استخرج sample rate من الـ mimeType مثل "audio/L16;rate=24000"، mono، 16-bit). بدون هذا الصوت لن يعمل في المتصفح إطلاقًا.
+
+5. ارفع WAV الناتج لـ Supabase Storage (bucket خاص "generated-audio")، احفظ المسار في audio_url بجدول generation_history.
+6. أنشئ endpoint مصادَق GET /api/generations/:id/stream يبث الصوت فقط لصاحبه.
+7. اخصم الرصيد (credits_balance -= مجموع الأحرف) فقط بعد نجاح الرفع الكامل. لا خصم عند أي فشل جزئي.
+8. أضف صفحة /history تعرض كل التوليدات (نص، تاريخ، عدد الأحرف، حالة) مع زر تشغيل يفتح الصوت المحفوظ.
+
+النتيجة المطلوبة: بلوكين بنبرتين مختلفتين (Calm ثم Excited)، ولّد، تأكد أنه صوت واحد متصل ينتقل بين النبرتين ويعمل فعليًا. جرّب أيضًا توليدًا يتجاوز رصيدك المتاح وتأكد أنه يُمنَع برسالة واضحة قبل إرسال أي طلب لـ Gemini.

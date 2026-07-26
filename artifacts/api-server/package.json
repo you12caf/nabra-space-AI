@@ -1,0 +1,24 @@
+{
+  "name": "@workspace/api-server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm run build && pnpm run start",
+    "build": "node ./build.mjs",
+    "start": "node --env-file=.env --enable-source-maps ./dist/index.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@google/genai": "^2.13.0",
+    "@hono/node-server": "^1.14.4",
+    "@supabase/supabase-js": "^2.49.4",
+    "@workspace/api-zod": "workspace:*",
+    "dodopayments": "^1.9.0",
+    "hono": "^4.7.11"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "esbuild": "0.27.3"
+  }
+}

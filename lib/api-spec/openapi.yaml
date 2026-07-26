@@ -1,0 +1,794 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Nabra Space API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: user
+    description: User profile
+  - name: generation
+    description: Audio generation
+  - name: payments
+    description: Payments
+  - name: affiliate
+    description: Affiliate & referrals
+  - name: promo
+    description: Promo codes
+  - name: admin
+    description: Admin operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /me:
+    get:
+      operationId: getMe
+      tags: [user]
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+
+  /generate:
+    post:
+      operationId: createGeneration
+      tags: [generation]
+      summary: Start audio generation job
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerationInput"
+      responses:
+        "201":
+          description: Generation job started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Generation"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
+        "401":
+          description: Unauthorized
+
+  /generations:
+    get:
+      operationId: listGenerations
+      tags: [generation]
+      summary: List user generation history
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of generations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Generation"
+
+  /generations/{id}:
+    get:
+      operationId: getGeneration
+      tags: [generation]
+      summary: Get generation status by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Generation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Generation"
+        "404":
+          description: Not found
+
+  /payments/checkout:
+    post:
+      operationId: createCheckout
+      tags: [payments]
+      summary: Create Dodo payment checkout session
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutInput"
+      responses:
+        "200":
+          description: Checkout session URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutResult"
+
+  /affiliate/attribute:
+    post:
+      operationId: attributeReferral
+      tags: [affiliate]
+      summary: Attribute referral on signup
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttributeInput"
+      responses:
+        "200":
+          description: Attribution result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttributeResult"
+
+  /affiliate/stats:
+    get:
+      operationId: getAffiliateStats
+      tags: [affiliate]
+      summary: Get current user affiliate stats
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Affiliate stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AffiliateStats"
+
+  /affiliate/click:
+    post:
+      operationId: trackAffiliateClick
+      tags: [affiliate]
+      summary: Track affiliate link click
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClickInput"
+      responses:
+        "200":
+          description: Click tracked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClickResult"
+
+  /promo-codes/redeem:
+    post:
+      operationId: redeemPromoCode
+      tags: [promo]
+      summary: Redeem a promo code
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RedeemInput"
+      responses:
+        "200":
+          description: Redemption result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RedeemResult"
+        "400":
+          description: Invalid or expired code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResult"
+
+  /admin/overview:
+    get:
+      operationId: getAdminOverview
+      tags: [admin]
+      summary: Get admin overview stats
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Overview stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOverview"
+
+  /admin/users:
+    get:
+      operationId: listAdminUsers
+      tags: [admin]
+      summary: List all users (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUser"
+
+  /admin/users/{id}/credits:
+    patch:
+      operationId: updateUserCredits
+      tags: [admin]
+      summary: Adjust user credits (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreditsUpdate"
+      responses:
+        "200":
+          description: Updated user profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+  /admin/users/{id}/status:
+    patch:
+      operationId: updateUserStatus
+      tags: [admin]
+      summary: Ban or unban a user (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserStatusUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+  /admin/transactions:
+    get:
+      operationId: listAdminTransactions
+      tags: [admin]
+      summary: List all transactions (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, completed, failed]
+      responses:
+        "200":
+          description: List of transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminTransaction"
+
+  /admin/promo-codes:
+    get:
+      operationId: listAdminPromoCodes
+      tags: [admin]
+      summary: List all promo codes (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of promo codes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PromoCode"
+    post:
+      operationId: createAdminPromoCode
+      tags: [admin]
+      summary: Create promo code (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PromoCodeInput"
+      responses:
+        "201":
+          description: Created promo code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromoCode"
+
+  /admin/promo-codes/{id}:
+    patch:
+      operationId: updateAdminPromoCode
+      tags: [admin]
+      summary: Update promo code (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PromoCodeUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromoCode"
+    delete:
+      operationId: deleteAdminPromoCode
+      tags: [admin]
+      summary: Delete promo code (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResult"
+
+  /admin/affiliates:
+    get:
+      operationId: listAdminAffiliates
+      tags: [admin]
+      summary: List all affiliates (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of affiliates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminAffiliate"
+
+  /admin/affiliates/{id}:
+    patch:
+      operationId: updateAdminAffiliate
+      tags: [admin]
+      summary: Update affiliate commission/status (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AffiliateUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAffiliate"
+
+  /admin/affiliates/{id}/payout:
+    post:
+      operationId: recordAffiliatePayout
+      tags: [admin]
+      summary: Record affiliate payout (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PayoutInput"
+      responses:
+        "200":
+          description: Payout recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayoutRecord"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ErrorResult:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    DeleteResult:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+
+    UserProfile:
+      type: object
+      required: [user_id, email, credits_balance, is_admin, created_at, is_banned]
+      properties:
+        user_id: { type: string }
+        email: { type: string }
+        credits_balance: { type: integer }
+        is_admin: { type: boolean }
+        is_banned: { type: boolean }
+        full_name: { type: ["string", "null"] }
+        avatar_url: { type: ["string", "null"] }
+        created_at: { type: string }
+
+    GenerationBlock:
+      type: object
+      required: [tone, text]
+      properties:
+        tone: { type: string }
+        text: { type: string }
+
+    Generation:
+      type: object
+      required: [id, user_id, status, created_at]
+      properties:
+        id: { type: string }
+        user_id: { type: string }
+        text_input: { type: ["string", "null"] }
+        character_count: { type: ["integer", "null"] }
+        blocks_json:
+          type: ["array", "null"]
+          items:
+            $ref: "#/components/schemas/GenerationBlock"
+        audio_url: { type: ["string", "null"] }
+        status: { type: string }
+        created_at: { type: string }
+
+    GenerationInput:
+      type: object
+      required: [blocks]
+      properties:
+        blocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/GenerationBlock"
+
+    Transaction:
+      type: object
+      required: [id, user_id, amount_usd, status, created_at]
+      properties:
+        id: { type: string }
+        user_id: { type: string }
+        amount_usd: { type: number }
+        characters_granted: { type: ["integer", "null"] }
+        dodo_payment_id: { type: ["string", "null"] }
+        status: { type: string }
+        created_at: { type: string }
+
+    AffiliateStats:
+      type: object
+      required: [user_id, referral_code, commission_rate, total_clicks, total_signups, total_conversions, pending_balance, available_balance, status]
+      properties:
+        user_id: { type: string }
+        referral_code: { type: string }
+        commission_rate: { type: number }
+        total_clicks: { type: integer }
+        total_signups: { type: integer }
+        total_conversions: { type: integer }
+        pending_balance: { type: number }
+        available_balance: { type: number }
+        status: { type: string }
+
+    PromoCode:
+      type: object
+      required: [id, code, characters_granted, max_total_uses, max_uses_per_user, current_uses, is_active]
+      properties:
+        id: { type: string }
+        code: { type: string }
+        characters_granted: { type: integer }
+        max_total_uses: { type: integer }
+        max_uses_per_user: { type: integer }
+        current_uses: { type: integer }
+        expires_at: { type: ["string", "null"] }
+        linked_affiliate_id: { type: ["string", "null"] }
+        is_active: { type: boolean }
+
+    PromoCodeInput:
+      type: object
+      required: [code, characters_granted, max_total_uses]
+      properties:
+        code: { type: string }
+        characters_granted: { type: integer }
+        max_total_uses: { type: integer }
+        max_uses_per_user: { type: integer }
+        expires_at: { type: ["string", "null"] }
+        linked_affiliate_id: { type: ["string", "null"] }
+
+    PromoCodeUpdate:
+      type: object
+      properties:
+        is_active: { type: boolean }
+        characters_granted: { type: integer }
+        max_total_uses: { type: integer }
+        expires_at: { type: ["string", "null"] }
+
+    CheckoutInput:
+      type: object
+      required: [package_id]
+      properties:
+        package_id:
+          type: string
+          enum: [starter, pro, agency]
+
+    CheckoutResult:
+      type: object
+      required: [url]
+      properties:
+        url: { type: string }
+
+    AttributeInput:
+      type: object
+      required: [referral_code]
+      properties:
+        referral_code: { type: string }
+
+    AttributeResult:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
+        message: { type: ["string", "null"] }
+
+    ClickInput:
+      type: object
+      required: [referral_code]
+      properties:
+        referral_code: { type: string }
+
+    ClickResult:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
+
+    RedeemInput:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string }
+
+    RedeemResult:
+      type: object
+      required: [success, characters_granted, new_balance]
+      properties:
+        success: { type: boolean }
+        characters_granted: { type: integer }
+        new_balance: { type: integer }
+        message: { type: ["string", "null"] }
+
+    UserGrowthPoint:
+      type: object
+      required: [date, count]
+      properties:
+        date: { type: string }
+        count: { type: integer }
+
+    AdminOverview:
+      type: object
+      required: [total_users, user_growth_pct, total_revenue, monthly_revenue, total_characters_generated, success_rate]
+      properties:
+        total_users: { type: integer }
+        user_growth_pct: { type: number }
+        total_revenue: { type: number }
+        monthly_revenue: { type: number }
+        total_characters_generated: { type: integer }
+        success_rate: { type: number }
+        recent_transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminTransaction"
+        top_affiliates:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminAffiliate"
+        user_growth_data:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserGrowthPoint"
+
+    AdminUser:
+      type: object
+      required: [user_id, email, created_at, credits_balance, generation_count, total_spent, is_admin, is_banned]
+      properties:
+        user_id: { type: string }
+        email: { type: string }
+        full_name: { type: ["string", "null"] }
+        avatar_url: { type: ["string", "null"] }
+        created_at: { type: string }
+        credits_balance: { type: integer }
+        generation_count: { type: integer }
+        total_spent: { type: number }
+        is_admin: { type: boolean }
+        is_banned: { type: boolean }
+
+    AdminTransaction:
+      type: object
+      required: [id, user_id, amount_usd, status, created_at]
+      properties:
+        id: { type: string }
+        user_id: { type: string }
+        email: { type: ["string", "null"] }
+        amount_usd: { type: number }
+        characters_granted: { type: ["integer", "null"] }
+        dodo_payment_id: { type: ["string", "null"] }
+        status: { type: string }
+        package_id: { type: ["string", "null"] }
+        created_at: { type: string }
+
+    AdminAffiliate:
+      type: object
+      required: [user_id, referral_code, commission_rate, total_clicks, total_signups, total_conversions, pending_balance, available_balance, status]
+      properties:
+        user_id: { type: string }
+        email: { type: ["string", "null"] }
+        referral_code: { type: string }
+        commission_rate: { type: number }
+        total_clicks: { type: integer }
+        total_signups: { type: integer }
+        total_conversions: { type: integer }
+        pending_balance: { type: number }
+        available_balance: { type: number }
+        status: { type: string }
+
+    CreditsUpdate:
+      type: object
+      required: [type, amount]
+      properties:
+        type:
+          type: string
+          enum: [set, add, subtract]
+        amount: { type: integer }
+
+    UserStatusUpdate:
+      type: object
+      required: [is_banned]
+      properties:
+        is_banned: { type: boolean }
+
+    AffiliateUpdate:
+      type: object
+      properties:
+        commission_rate: { type: number }
+        status: { type: string }
+
+    PayoutInput:
+      type: object
+      required: [amount]
+      properties:
+        amount: { type: number }
+        note: { type: ["string", "null"] }
+
+    PayoutRecord:
+      type: object
+      required: [id, amount, created_at]
+      properties:
+        id: { type: string }
+        affiliate_user_id: { type: string }
+        amount: { type: number }
+        note: { type: ["string", "null"] }
+        created_at: { type: string }

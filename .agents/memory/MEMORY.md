@@ -1,0 +1,1 @@
+- [Nabra Space architecture](nabra-space-arch.md) — Hono API + Supabase + Gemini TTS; all key decisions, constraints, and what must never change

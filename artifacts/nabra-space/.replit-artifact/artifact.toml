@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Nabra Space"
+version = "1.0.0"
+id = "artifacts/nabra-space"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20424
+
+[services.development]
+run = "pnpm --filter @workspace/nabra-space run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/nabra-space", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/nabra-space/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20424"
+BASE_PATH = "/"

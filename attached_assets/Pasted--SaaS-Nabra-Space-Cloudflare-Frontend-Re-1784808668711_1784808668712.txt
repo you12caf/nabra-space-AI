@@ -1,0 +1,26 @@
+ابنِ مشروع SaaS باسم "Nabra Space" بالستاك التالي (إجباري لتوافق Cloudflare لاحقًا):
+- Frontend: React + Vite + TailwindCSS + shadcn/ui (تصميم بسيط ونظيف الآن فقط، بدون حركات معقدة — الأولوية للوظائف)
+- Backend: Hono (متوافق مع Cloudflare Workers)، لا تستخدم Express ولا أي Node API غير متوافق مع Workers.
+
+هذه المرحلة أولوية قصوى: **كل شيء يجب أن يعمل فعليًا وتختبره بنفسك قبل الانتقال لأي تحسين بصري**. لا تصرف وقتًا في تفاصيل تصميم دقيقة الآن.
+
+اربط Supabase عبر متغيرات البيئة (موجودة في Secrets): SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+فعّل تسجيل الدخول عبر Google OAuth فقط عبر Supabase Auth.
+
+أنشئ الجداول التالية في Supabase مع RLS مفعّل على الجميع (كل مستخدم يرى بياناته فقط، الأدمين يرى كل شيء):
+
+users_profile: user_id, email, credits_balance (integer), is_admin (boolean), full_name, avatar_url, created_at
+generation_history: id, user_id, text_input, character_count, blocks_json (jsonb — يحفظ كل البلوكات ونبراتها), audio_url, status, created_at
+transactions: id, user_id, amount_usd, characters_granted, dodo_payment_id, status (pending/completed/failed), created_at
+affiliates: user_id, referral_code (unique), commission_rate (default 0.15), total_clicks, total_signups, total_conversions, pending_balance, available_balance, status
+referral_attributions: id, referred_user_id (unique), affiliate_user_id, attributed_at, first_paid_conversion_at
+promo_codes: id, code (unique), characters_granted (integer), max_total_uses, max_uses_per_user (default 1), current_uses, expires_at (nullable), linked_affiliate_id (nullable), is_active
+promo_code_redemptions: id, promo_code_id, user_id, redeemed_at
+
+اكتب Trigger على auth.users (AFTER INSERT) ينشئ تلقائيًا صفًا في users_profile وصفًا في affiliates لكل مستخدم جديد. منطق الرصيد الابتدائي والأدمين داخل نفس الـ trigger:
+- credits_balance = 500 (رصيد مجاني تلقائي لكل حساب جديد، بدون أي شرط دفع)
+- is_admin = true فقط إذا كان NEW.email = 'youcef20226@gmail.com'، وإلا false لكل الحسابات الأخرى
+
+⚠️ قاعدة مهمة تنطبق على كل الموجهات القادمة: لا تعرض أبدًا أي سعر أو قيمة بالدينار الجزائري (DZD) في أي مكان بالواجهة. الأسعار بالدولار فقط، دائمًا.
+
+النتيجة المطلوبة: أسجل دخول بحساب Google عادي → أتحقق في قاعدة البيانات أن رصيدي 500 حرف بالضبط وis_admin=false. أسجل دخول (أو أطلب منك محاكاة الفحص) بإيميل youcef20226@gmail.com → أتحقق أن is_admin=true تلقائيًا. اختبر هذا فعليًا بنفسك.
