@@ -33,6 +33,7 @@ catalog:
 ignoredBuiltDependencies:
   - '@google/genai'
   - protobufjs
+  - workerd
 
 minimumReleaseAge: 1440
 

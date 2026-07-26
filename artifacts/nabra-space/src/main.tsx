@@ -1,10 +1,14 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { setAuthTokenGetter } from '@workspace/api-client-react';
+import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
 import { supabase } from '@/lib/supabase';
 import { AuthProvider } from '@/contexts/AuthContext';
 import App from './App.tsx';
 import './index.css';
+
+if (import.meta.env.VITE_API_URL) {
+  setBaseUrl(import.meta.env.VITE_API_URL);
+}
 
 setAuthTokenGetter(async () => {
   const { data } = await supabase.auth.getSession();

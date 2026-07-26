@@ -18,7 +18,8 @@ if (!basePath) throw new Error('BASE_PATH environment variable is required but w
 export default defineConfig({
   base: basePath,
   define: {
-    // Expose Supabase public config to the frontend (anon key only — NOT service role key)
+    // Expose Supabase public config to the frontend (anon key only — NOT service role key) 
+    'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL),
     'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.SUPABASE_URL ?? ''),
     'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY ?? ''),
     // Frontend base URL for OAuth redirects (avoids localhost redirect in production)
@@ -30,11 +31,11 @@ export default defineConfig({
     runtimeErrorOverlay(),
     ...(process.env.NODE_ENV !== 'production' && process.env.REPL_ID !== undefined
       ? [
-          await import('@replit/vite-plugin-cartographer').then((m) =>
-            m.cartographer({ root: path.resolve(import.meta.dirname, '..') }),
-          ),
-          await import('@replit/vite-plugin-dev-banner').then((m) => m.devBanner()),
-        ]
+        await import('@replit/vite-plugin-cartographer').then((m) =>
+          m.cartographer({ root: path.resolve(import.meta.dirname, '..') }),
+        ),
+        await import('@replit/vite-plugin-dev-banner').then((m) => m.devBanner()),
+      ]
       : []),
   ],
   resolve: {
