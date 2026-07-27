@@ -7,6 +7,8 @@ import { Trash2, Plus, Play, Mic2, AlertCircle, RefreshCw, Loader2, Volume2, Coi
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+const MAX_CHARACTERS_PER_GENERATION = 500;
+
 
 const TONES = [
   { value: 'Calm', label: 'هادئ' },
@@ -75,6 +77,8 @@ export default function Generate() {
   };
 
   const totalChars = blocks.reduce((sum, b) => sum + b.text.length, 0);
+  const isOverLimit = totalChars > MAX_CHARACTERS_PER_GENERATION;
+  const isNearLimit = totalChars > MAX_CHARACTERS_PER_GENERATION * 0.85;
   const hasEmptyText = blocks.some(b => b.text.trim().length === 0);
   const hasEmptyCustomTone = blocks.some(b => b.isCustomTone && !b.tone.trim());
   const isGenerating = createGen.isPending || (generation?.status === 'pending' || generation?.status === 'processing');
@@ -224,10 +228,7 @@ export default function Generate() {
             <div className="flex items-center gap-6">
               <div className="flex flex-col">
                 <span className="text-sm text-muted-foreground">مجموع الأحرف</span>
-                <span className="text-2xl font-bold flex items-center gap-2">
-                  {totalChars}
-                  <span className="text-sm font-normal text-muted-foreground">حرف</span>
-                </span>
+                  <span className={`text-2xl font-bold flex items-center gap-2 ${isOverLimit ? 'text-destructive' : isNearLimit ? 'text-amber-600' : ''}`}> {totalChars} / {MAX_CHARACTERS_PER_GENERATION} حرف </span>
               </div>
               
               <div className="h-10 w-px bg-border hidden sm:block" />
@@ -248,7 +249,7 @@ export default function Generate() {
             <Button
               size="lg"
               className="w-full sm:w-auto px-10 rounded-xl gap-2 font-bold text-lg"
-              disabled={totalChars === 0 || hasEmptyText || hasEmptyCustomTone || !hasEnoughCredits || isGenerating}
+              disabled={totalChars === 0 || hasEmptyText || hasEmptyCustomTone || !hasEnoughCredits || isGenerating || isOverLimit}
               onClick={handleGenerate}
               data-testid="button-generate"
             >

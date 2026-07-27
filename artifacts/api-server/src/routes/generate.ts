@@ -3,6 +3,8 @@ import type { AppEnv } from "../app.js";
 import { requireAuth } from "../lib/auth.js";
 import { getSupabaseAdmin } from "../lib/supabase.js";
 
+const MAX_CHARACTERS_PER_GENERATION = 500;
+
 const app = new Hono<AppEnv>();
 
 // ─── PCM → WAV (Web API, CF Workers compatible) ──────────────────────────────
@@ -178,6 +180,16 @@ app.post("/", requireAuth, async (c) => {
 
   const characterCount = blocks.reduce((s, b) => s + b.text.length, 0);
 
+  // Enforce max characters per generation
+  if (characterCount > MAX_CHARACTERS_PER_GENERATION) {
+    return c.json(
+      {
+        error: `الحد الأقصى للتوليد الواحد هو ${MAX_CHARACTERS_PER_GENERATION} حرف (النص الحالي: ${characterCount} حرف)`,
+      },
+      400,
+    );
+  }
+
   // Check credits
   const { data: profile } = await supabase
     .from("users_profile")
@@ -215,8 +227,7 @@ app.post("/", requireAuth, async (c) => {
     return c.json({ error: "خطأ في إنشاء طلب التوليد" }, 500);
   }
 
-  // Run in background (Node.js: event loop continues after response)
-  processGeneration(gen.id, userId, blocks, characterCount).catch(async (err) => {
+  const backgroundTask = processGeneration(gen.id, userId, blocks, characterCount).catch(async (err) => {
     console.error("[generate] Background processing failed:", err);
     await getSupabaseAdmin()
       .from("generation_history")
@@ -224,7 +235,10 @@ app.post("/", requireAuth, async (c) => {
       .eq("id", gen.id);
   });
 
+  c.executionCtx.waitUntil(backgroundTask);
+
   return c.json(gen, 201);
+
 });
 
 export default app;
