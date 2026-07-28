@@ -129,7 +129,7 @@ export default function Generate() {
                   {index + 1}
                 </span>
                 <div className="flex-1 sm:w-[200px]">
-                  <select 
+                  <select
                     value={block.isCustomTone ? CUSTOM_TONE_SENTINEL : block.tone}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -161,9 +161,9 @@ export default function Generate() {
                   )}
                 </div>
               </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                 onClick={() => removeBlock(block.id)}
                 disabled={blocks.length === 1 || isGenerating}
@@ -172,7 +172,7 @@ export default function Generate() {
                 <Trash2 className="w-5 h-5" />
               </Button>
             </div>
-            
+
             <div className="relative">
               <Textarea
                 value={block.text}
@@ -190,8 +190,8 @@ export default function Generate() {
           </div>
         ))}
 
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           className="w-full py-6 border-dashed border-2 rounded-2xl text-muted-foreground hover:text-primary hover:border-primary hover:bg-primary/5 gap-2"
           onClick={addBlock}
           disabled={isGenerating}
@@ -221,15 +221,15 @@ export default function Generate() {
       {/* Fixed Bottom Bar */}
       <div className="fixed bottom-0 right-0 left-0 lg:left-0 lg:right-0 lg:pl-0 lg:mr-[280px] bg-card border-t border-border p-4 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] z-40">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          
+
           <div className="flex items-center gap-6">
             <div className="flex flex-col">
               <span className="text-sm text-muted-foreground">مجموع الأحرف</span>
-                <span className={`text-2xl font-bold flex items-center gap-2 ${isOverLimit ? 'text-destructive' : isNearLimit ? 'text-amber-600' : ''}`}> {totalChars} / {MAX_CHARACTERS_PER_GENERATION} حرف </span>
+              <span className={`text-2xl font-bold flex items-center gap-2 ${isOverLimit ? 'text-destructive' : isNearLimit ? 'text-amber-600' : ''}`}> {totalChars} / {MAX_CHARACTERS_PER_GENERATION} حرف </span>
             </div>
-            
+
             <div className="h-10 w-px bg-border hidden sm:block" />
-            
+
             {!hasEnoughCredits && totalChars > 0 && (
               <div className="flex items-center gap-2 text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
                 <AlertCircle className="w-5 h-5" />
