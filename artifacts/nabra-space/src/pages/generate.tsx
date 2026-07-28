@@ -7,7 +7,7 @@ import { Trash2, Plus, Play, Mic2, AlertCircle, RefreshCw, Loader2, Volume2, Coi
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-const MAX_CHARACTERS_PER_GENERATION = 500;
+const MAX_CHARACTERS_PER_GENERATION = 600;
 
 
 const TONES = [
@@ -39,7 +39,7 @@ export default function Generate() {
   const [activeGenerationId, setActiveGenerationId] = useState<string | null>(null);
 
   const createGen = useCreateGeneration();
-  
+
   // Polling generation status
   const { data: generation, isLoading: isPolling } = useGetGeneration(activeGenerationId!, {
     query: {
@@ -140,7 +140,7 @@ export default function Generate() {
                       }
                     }}
                     className="w-full bg-background border border-input rounded-xl px-3 py-2 focus:ring-2 focus:ring-primary outline-none"
-                    disabled={isGenerating || generation?.status === 'completed'}
+                    disabled={isGenerating}
                   >
                     {TONES.map(t => (
                       <option key={t.value} value={t.value}>{t.label}</option>
@@ -155,7 +155,7 @@ export default function Generate() {
                       placeholder="اكتب النبرة اللي تحبها، مثلاً: يتكلم بسخرية خفيفة"
                       maxLength={60}
                       className="w-full bg-background border border-input rounded-xl px-3 py-2 focus:ring-2 focus:ring-primary outline-none mt-2"
-                      disabled={isGenerating || generation?.status === 'completed'}
+                      disabled={isGenerating}
                       data-testid={`input-custom-tone-${index}`}
                     />
                   )}
@@ -166,7 +166,7 @@ export default function Generate() {
                 size="icon" 
                 className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                 onClick={() => removeBlock(block.id)}
-                disabled={blocks.length === 1 || isGenerating || generation?.status === 'completed'}
+                disabled={blocks.length === 1 || isGenerating}
                 data-testid={`button-delete-block-${index}`}
               >
                 <Trash2 className="w-5 h-5" />
@@ -180,7 +180,7 @@ export default function Generate() {
                 placeholder="اكتب النص هنا..."
                 className="min-h-[120px] resize-none text-base bg-background/50 border-input rounded-xl p-4"
                 dir="rtl"
-                disabled={isGenerating || generation?.status === 'completed'}
+                disabled={isGenerating}
                 data-testid={`textarea-block-${index}`}
               />
               <div className="absolute bottom-3 left-3 text-xs font-medium px-2 py-1 rounded-md bg-muted text-muted-foreground">
@@ -190,18 +190,16 @@ export default function Generate() {
           </div>
         ))}
 
-        {(!generation || generation.status === 'failed') && (
-          <Button 
-            variant="outline" 
-            className="w-full py-6 border-dashed border-2 rounded-2xl text-muted-foreground hover:text-primary hover:border-primary hover:bg-primary/5 gap-2"
-            onClick={addBlock}
-            disabled={isGenerating}
-            data-testid="button-add-block"
-          >
-            <Plus className="w-5 h-5" />
-            إضافة مقطع جديد
-          </Button>
-        )}
+        <Button 
+          variant="outline" 
+          className="w-full py-6 border-dashed border-2 rounded-2xl text-muted-foreground hover:text-primary hover:border-primary hover:bg-primary/5 gap-2"
+          onClick={addBlock}
+          disabled={isGenerating}
+          data-testid="button-add-block"
+        >
+          <Plus className="w-5 h-5" />
+          إضافة مقطع جديد
+        </Button>
       </div>
 
       {/* Results Area */}
@@ -215,59 +213,57 @@ export default function Generate() {
           </div>
           <Button onClick={resetStudio} variant="outline" className="gap-2" data-testid="button-new-generation">
             <RefreshCw className="w-4 h-4" />
-            إنشاء مقطع جديد
+            إنشاء مقطع جديد (يمسح كل شيء)
           </Button>
         </div>
       )}
 
       {/* Fixed Bottom Bar */}
-      {(!generation || generation.status === 'failed' || isGenerating) && (
-        <div className="fixed bottom-0 right-0 left-0 lg:left-0 lg:right-0 lg:pl-0 lg:mr-[280px] bg-card border-t border-border p-4 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] z-40">
-          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-            
-            <div className="flex items-center gap-6">
-              <div className="flex flex-col">
-                <span className="text-sm text-muted-foreground">مجموع الأحرف</span>
-                  <span className={`text-2xl font-bold flex items-center gap-2 ${isOverLimit ? 'text-destructive' : isNearLimit ? 'text-amber-600' : ''}`}> {totalChars} / {MAX_CHARACTERS_PER_GENERATION} حرف </span>
-              </div>
-              
-              <div className="h-10 w-px bg-border hidden sm:block" />
-              
-              {!hasEnoughCredits && totalChars > 0 && (
-                <div className="flex items-center gap-2 text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
-                  <AlertCircle className="w-5 h-5" />
-                  <div className="flex flex-col text-sm">
-                    <span>رصيد غير كافٍ</span>
-                    <Link href="/pricing" className="font-bold underline hover:text-destructive/80">
-                      اشحن رصيدك
-                    </Link>
-                  </div>
-                </div>
-              )}
+      <div className="fixed bottom-0 right-0 left-0 lg:left-0 lg:right-0 lg:pl-0 lg:mr-[280px] bg-card border-t border-border p-4 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] z-40">
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          
+          <div className="flex items-center gap-6">
+            <div className="flex flex-col">
+              <span className="text-sm text-muted-foreground">مجموع الأحرف</span>
+                <span className={`text-2xl font-bold flex items-center gap-2 ${isOverLimit ? 'text-destructive' : isNearLimit ? 'text-amber-600' : ''}`}> {totalChars} / {MAX_CHARACTERS_PER_GENERATION} حرف </span>
             </div>
-
-            <Button
-              size="lg"
-              className="w-full sm:w-auto px-10 rounded-xl gap-2 font-bold text-lg"
-              disabled={totalChars === 0 || hasEmptyText || hasEmptyCustomTone || !hasEnoughCredits || isGenerating || isOverLimit}
-              onClick={handleGenerate}
-              data-testid="button-generate"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  جاري التوليد...
-                </>
-              ) : (
-                <>
-                  <Mic2 className="w-5 h-5" />
-                  توليد الصوت
-                </>
-              )}
-            </Button>
+            
+            <div className="h-10 w-px bg-border hidden sm:block" />
+            
+            {!hasEnoughCredits && totalChars > 0 && (
+              <div className="flex items-center gap-2 text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
+                <AlertCircle className="w-5 h-5" />
+                <div className="flex flex-col text-sm">
+                  <span>رصيد غير كافٍ</span>
+                  <Link href="/pricing" className="font-bold underline hover:text-destructive/80">
+                    اشحن رصيدك
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
+
+          <Button
+            size="lg"
+            className="w-full sm:w-auto px-10 rounded-xl gap-2 font-bold text-lg"
+            disabled={totalChars === 0 || hasEmptyText || hasEmptyCustomTone || !hasEnoughCredits || isGenerating || isOverLimit}
+            onClick={handleGenerate}
+            data-testid="button-generate"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                جاري التوليد...
+              </>
+            ) : (
+              <>
+                <Mic2 className="w-5 h-5" />
+                توليد الصوت
+              </>
+            )}
+          </Button>
         </div>
-      )}
+      </div>
     </div>
   );
 }

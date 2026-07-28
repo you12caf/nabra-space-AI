@@ -3,7 +3,7 @@ import type { AppEnv } from "../app.js";
 import { requireAuth } from "../lib/auth.js";
 import { getSupabaseAdmin } from "../lib/supabase.js";
 
-const MAX_CHARACTERS_PER_GENERATION = 500;
+const MAX_CHARACTERS_PER_GENERATION = 600;
 
 const app = new Hono<AppEnv>();
 
