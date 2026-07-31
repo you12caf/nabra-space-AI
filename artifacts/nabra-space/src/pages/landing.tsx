@@ -1,6 +1,6 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Link } from 'wouter';
-import { PlayCircle, ChevronLeft, Check } from 'lucide-react';
+import { PlayCircle, Pause, ChevronLeft, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, useInView } from 'framer-motion';
 
@@ -94,8 +94,12 @@ const PLANS = [
 
 /* ═══════════════════════════════════════════════ */
 export default function Landing() {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
   return (
     <div className="min-h-screen bg-background selection:bg-primary/20 selection:text-primary overflow-hidden" style={{ fontFamily: "var(--app-font-body)" }}>
+      <audio ref={audioRef} src="/sample-1.wav" onEnded={() => setIsPlaying(false)} />
 
       {/* ═══ NAVBAR ═══ */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/70 backdrop-blur-xl border-b border-border/40 transition-all">
@@ -105,7 +109,7 @@ export default function Landing() {
           </Link>
 
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
-            <a href="#how-it-works" className="hover:text-foreground transition-colors">كيف يشتغل</a>
+            <a href="#how-it-works" className="hover:text-foreground transition-colors">كيف يعمل </a>
             <a href="#pricing" className="hover:text-foreground transition-colors">الأسعار</a>
           </div>
 
@@ -144,15 +148,15 @@ export default function Landing() {
               </span>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold leading-[1.15] mb-6 tracking-tight" style={{ fontFamily: "var(--app-font-heading)" }}>
-                خلّي إعلانك يهدر{' '}
-                <span className="gradient-text">بالدارجة</span>،{' '}
+                أعطي لإعلانك نبرة{' '}
+                <span className="gradient-text">جزائرية حقيقية</span>،{' '}
                 <br className="hidden sm:block" />
-                مو يقرا بيها.
+                بضغطة زر.
               </h1>
 
+
               <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-10 max-w-xl" style={{ fontFamily: "var(--app-font-body)" }}>
-                من نص مكتوب لصوت بشري جزائري أصيل، بكل نبرة وعاطفة يحتاجها براندك — بلا استوديو، بلا مؤثر صوتي، بلا انتظار.
-              </p>
+                من سكريبت لصوت بشري جزائري أصيل، بكل نبرة وعاطفة يحتاجها براندك — بلا استوديو، بلا مؤثر صوتي، بلا انتظار.              </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/login">
@@ -164,9 +168,22 @@ export default function Landing() {
                   </button>
                 </Link>
                 <button
+                  onClick={() => {
+                    if (isPlaying) {
+                      audioRef.current?.pause();
+                      setIsPlaying(false);
+                    } else {
+                      audioRef.current?.play();
+                      setIsPlaying(true);
+                    }
+                  }}
                   className="font-bold px-8 py-4 rounded-2xl text-lg border border-border/60 text-foreground bg-transparent hover:bg-white/5 transition-colors flex items-center gap-3"
                 >
-                  <PlayCircle className="w-6 h-6 text-primary" />
+                  {isPlaying ? (
+                    <Pause className="w-6 h-6 text-primary" />
+                  ) : (
+                    <PlayCircle className="w-6 h-6 text-primary" />
+                  )}
                   استمع لعينة
                 </button>
               </div>
@@ -250,7 +267,7 @@ export default function Landing() {
                   {/* Generate button mockup */}
                   <div className="flex justify-start pt-2">
                     <div className="gradient-bg text-white font-bold px-6 py-2.5 rounded-xl text-sm flex items-center gap-2 opacity-90">
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="22" /></svg>
                       توليد الصوت
                     </div>
                   </div>
@@ -261,13 +278,12 @@ export default function Landing() {
             {/* Steps labels — staggered vertically */}
             <div className="flex flex-row lg:flex-col gap-6 lg:gap-10 lg:pt-16">
               {[
-                { num: '١', text: 'اكتب نصك', color: 'text-primary' },
-                { num: '٢', text: 'اختار النبرة', color: 'text-[#1D62D3]' },
+                { num: '١', text: 'اختار النبرة', color: 'text-primary' },
+                { num: '٢', text: 'اكتب نصك', color: 'text-[#1D62D3]' },
                 { num: '٣', text: 'استمع فورًا', color: 'text-accent' },
               ].map((step, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, x: -20 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: 0.2 + i * 0.15 }}
@@ -293,11 +309,10 @@ export default function Landing() {
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-8" style={{ fontFamily: "var(--app-font-heading)" }}>
             دارجة حقيقية <span className="gradient-text">100%</span>.{' '}
             <br className="hidden md:block" />
-            مو مترجمة، مو مصطنعة.
+تسمعها، تحسها، وتفهمها.
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto" style={{ fontFamily: "var(--app-font-body)" }}>
-            ما نترجموش من العربية الفصحى ونلزقو لهجة. نبرة سبيس مبنية من الأساس باش تفهم إيقاع الدارجة الجزائرية، وتنطقها كيما ينطقها الناس — بطبيعية وعاطفة.
-          </p>
+ماشي مجرد ذكاء اصطناعي يقرأ نصوص. Nabra Space مبنية خصيصاً باش تعبر بالنبرة والإيقاع الجزائري الأصلي — كلام نقي، طبيعي، وبلا تصنع.          </p>
         </div>
       </Section>
 
@@ -327,11 +342,10 @@ export default function Landing() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: i * 0.12 }}
-                className={`relative bg-card rounded-2xl p-7 lg:p-8 transition-all duration-300 hover:translate-y-[-4px] ${
-                  plan.popular
-                    ? 'gradient-border shadow-xl shadow-primary/10 scale-[1.03] z-10'
-                    : 'border border-border/60 shadow-lg shadow-black/20'
-                }`}
+                className={`relative bg-card rounded-2xl p-7 lg:p-8 transition-all duration-300 hover:translate-y-[-4px] ${plan.popular
+                  ? 'gradient-border shadow-xl shadow-primary/10 scale-[1.03] z-10'
+                  : 'border border-border/60 shadow-lg shadow-black/20'
+                  }`}
               >
                 {plan.popular && (
                   <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 gradient-bg text-white px-4 py-1 rounded-full text-xs font-bold shadow-md">
@@ -367,11 +381,10 @@ export default function Landing() {
 
                 <Link href="/login">
                   <button
-                    className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all ${
-                      plan.popular
-                        ? 'gradient-bg text-white shadow-lg hover:shadow-primary/30'
-                        : 'bg-transparent border border-border/60 text-foreground hover:bg-white/5'
-                    }`}
+                    className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all ${plan.popular
+                      ? 'gradient-bg text-white shadow-lg hover:shadow-primary/30'
+                      : 'bg-transparent border border-border/60 text-foreground hover:bg-white/5'
+                      }`}
                     data-testid={`landing-subscribe-${plan.id}`}
                   >
                     شراء الآن
