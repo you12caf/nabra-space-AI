@@ -37,8 +37,8 @@ export default function Login() {
       
       <div className="w-full max-w-md bg-card border border-border p-8 rounded-3xl shadow-xl relative z-10">
         <div className="text-center mb-10">
-          <div className="w-16 h-16 bg-primary rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-lg shadow-primary/20">
-            <svg className="w-8 h-8 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+          <div className="mx-auto mb-6 flex items-center justify-center">
+            <img src="/logo.png" alt="Nabra Space Logo" className="h-24 w-auto object-contain drop-shadow-lg transition-transform duration-300 hover:scale-105" />
           </div>
           <h1 className="text-3xl font-bold mb-2">تسجيل الدخول</h1>
           <p className="text-muted-foreground">مرحباً بك في Nabra Space - استوديو الصوت الذكي</p>

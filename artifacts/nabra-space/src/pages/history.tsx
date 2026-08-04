@@ -7,6 +7,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
 export default function History() {
+  const daysRemaining = (createdAt: string) => {
+    const created = new Date(createdAt).getTime();
+    const now = Date.now();
+    const remaining = 7 - Math.floor((now - created) / (1000 * 60 * 60 * 24));
+    return Math.max(0, remaining);
+  };
+
   const { data: generations, isLoading, isError, refetch } = useListGenerations({
     query: { retry: 2 }
   });
@@ -65,16 +72,33 @@ export default function History() {
         <p className="text-muted-foreground">تصفح واستمع إلى المقاطع الصوتية التي قمت بتوليدها مسبقاً.</p>
       </div>
 
+      <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 px-4 py-3 rounded-xl mb-6">
+        <AlertCircle className="w-5 h-5 shrink-0" />
+        <span className="text-sm">
+          كل تسجيل صوتي يُحذف تلقائيًا وبشكل نهائي بعد 7 أيام من إنشائه. 
+          حمّل الملفات المهمة قبل انتهاء المدة.
+        </span>
+      </div>
+
       <div className="grid gap-4">
         {generations.map((gen) => (
           <div key={gen.id} className="bg-card border border-border p-5 rounded-2xl shadow-sm flex flex-col gap-4 transition-all hover:shadow-md">
             
             <div className="flex flex-col sm:flex-row justify-between gap-4">
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                 <div className="flex items-center gap-1.5 bg-muted/50 px-3 py-1.5 rounded-lg">
                   <Clock className="w-4 h-4" />
                   <span dir="ltr">{format(new Date(gen.created_at), 'dd MMM yyyy - HH:mm', { locale: ar })}</span>
                 </div>
+                {daysRemaining(gen.created_at) <= 2 ? (
+                  <span className="text-xs px-2 py-1 rounded-md bg-destructive/10 text-destructive font-medium">
+                    يُحذف خلال {daysRemaining(gen.created_at)} يوم
+                  </span>
+                ) : (
+                  <span className="text-xs px-2 py-1 rounded-md bg-muted text-muted-foreground">
+                    متبقي {daysRemaining(gen.created_at)} أيام
+                  </span>
+                )}
                 {gen.character_count != null && (
                   <div className="flex items-center gap-1.5 bg-muted/50 px-3 py-1.5 rounded-lg">
                     <Type className="w-4 h-4" />

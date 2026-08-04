@@ -53,11 +53,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </Button>
         </SheetTrigger>
         <SheetContent side="right" className="w-[280px] p-6 flex flex-col border-l-0 border-r border-border">
-          <div className="flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
-              <Mic2 className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <h1 className="text-xl font-bold font-sans">Nabra Space</h1>
+          <div className="flex items-center justify-center mb-10">
+            <img src="/logo.png" alt="Nabra Space" className="h-14 w-auto object-contain drop-shadow-sm transition-transform duration-300 hover:scale-105" />
           </div>
 
           <div className="mb-8 p-4 rounded-2xl bg-card border border-border shadow-sm flex flex-col gap-1">
@@ -81,11 +78,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex w-[280px] border-l border-border bg-card flex-col p-6 h-screen sticky top-0">
-        <div className="flex items-center gap-3 mb-10 px-2">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
-            <Mic2 className="w-6 h-6 text-primary-foreground" />
-          </div>
-          <h1 className="text-2xl font-bold font-sans tracking-tight">Nabra Space</h1>
+        <div className="flex items-center justify-center mb-10 px-2">
+          <img src="/logo.png" alt="Nabra Space" className="h-20 w-auto object-contain drop-shadow-md transition-transform duration-300 hover:scale-105" />
         </div>
 
         <div className="mb-8 p-5 rounded-2xl bg-muted/50 border border-border flex flex-col gap-2">
@@ -110,8 +104,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 max-h-screen overflow-y-auto">
-        <div className="flex-1 p-4 lg:p-8">
+      <main className="flex-1 flex flex-col min-w-0 max-h-screen overflow-y-auto relative">
+        <div className="flex-1 p-4 pt-20 lg:p-8">
           {children}
         </div>
       </main>

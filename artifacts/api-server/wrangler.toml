@@ -1,4 +1,7 @@
-﻿name = "nabra-space-api"
+name = "nabra-space-api"
 main = "src/worker.ts"
 compatibility_date = "2026-07-26"
 compatibility_flags = ["nodejs_compat"]
+
+[triggers]
+crons = ["0 3 * * *"]
